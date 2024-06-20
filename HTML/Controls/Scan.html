@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+
+		<link rel="stylesheet" href="../Resources/css/vant.css" />
+		<script src="../Resources/js/language/fklanguage.js"></script>
+		<script src="../Resources/js/config.js"></script>
+		<script src="../Resources/js/commom.js"></script>
+		<!-- vue.min.js -->
+		<script src="../Resources/js/vue.min.js"></script>
+		<!-- vant.min.js -->
+		<script src="../Resources/js/vant.min.js"></script>
+
+		<title></title>
+
+		<style>
+			body {
+				background-color: #F7F8FA;
+			}
+			.field-div {
+				margin-top: 100px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<div>
+				<van-nav-bar :left-text=fkTextDefault.Common.Back left-arrow @click-left="onClickLeft()">
+					
+				</van-nav-bar>
+			</div>
+			<van-form ref="ruleFormData" @submit="skipMain" style="padding-top: 30px;;">
+				<van-cell-group v-if="['01','02','03','04','05','06_TO','08'].includes(this.model)" :title="title">
+					<van-field autofocus v-model="adviceNo" ref="adviceNo"  :name="name" label="" :rules="[{ required: true,  message: title,trigger :'onSubmit' }]">
+					</van-field>
+
+				</van-cell-group>
+
+				<div style="margin-top: 60px; text-align: center;">
+					<div>
+						<van-button style="width: 90%;margin: auto;" block type="info" native-type="submit" :text="text1" >
+						</vant-button>
+					</div>
+					<div>
+						<van-button style="width: 90%;margin: auto;margin-top: 10px;" native-type="reset" type="info" plain block :text=fkTextDefault.Common.cachelist :url="'CacheList.html?model='+model"></van-button>
+					</div>
+					<div>
+						<van-button style="width: 90%;margin: auto;margin-top: 10px;" native-type="reset" type="default" block :text=fkTextDefault.Common.viewdata :url="'ResultList.html?model='+model"></van-button>
+					</div>
+				</div>
+
+
+			</van-form>
+		</div>
+	</body>
+	<script>
+		var app = new Vue({
+			el: '#app',
+			data() {
+				return {
+					name:'',
+					title:'',
+					text1:'',
+					model:'',
+					adviceNo: '',
+					returnUrl: '../Index/index.html',
+				}
+			},
+			created(){
+				this.init();
+			},
+			methods: {
+				init(){
+					this.model = fkcommon.url.getQueryValue('model');
+					console.log('!',this.model);
+					switch(this.model){
+						case "01":
+							this.title = fkTextDefault.Common.PleaseEnterThePurchaseOrderNumber;
+							this.name = fkTextDefault.Common.OrderNo;
+							this.text1 = fkTextDefault.Common.submit;
+							document.title = fkTextDefault.Common.M01_Name;
+							break;
+						case "02":
+							this.title = fkTextDefault.Common.PleaseEnterTheSupplierReturnAuthorizationNumber;
+							this.name = fkTextDefault.Common.OrderNo;
+							this.text1 = fkTextDefault.Common.submit;
+							document.title = fkTextDefault.Common.M02_Name;
+							break;
+						case "03":
+							this.title = fkTextDefault.Common.SONoBillNOTip;
+							this.name = fkTextDefault.Common.SOBillNO;
+							this.text1 = fkTextDefault.Common.submit;
+							document.title = fkTextDefault.Common.M03_Name;
+							break;
+						case "04":
+							this.title = fkTextDefault.Common.SalesReturnOrderNo;
+							this.text1 = fkTextDefault.Common.submit;
+							document.title = fkTextDefault.Common.M04_Name;;
+							break;
+						case "05":
+							this.title = fkTextDefault.Common.PleaseEnterInventoryCountNumber;
+							this.name = fkTextDefault.Common.InventoryCountNO;
+							this.text1 = fkTextDefault.Common.submit;
+							document.title = fkTextDefault.Common.M05_Name;
+							break;
+						case "06_IT":
+							this.text1= fkTextDefault.Common.Create;
+							this.url = "../06/ItCreate.html";
+							this.returnUrl="../06/Judge.html";
+							document.title = fkTextDefault.Common.M06_Name;
+							break;
+						case "06_TO":
+							this.title = fkTextDefault.Common.PleaseEnterTransferOrderNumber;
+							this.name = fkTextDefault.Common.ToNo
+							this.text1= fkTextDefault.Common.submit;
+							this.url = "../06/ToMain.html";
+							this.returnUrl = "../06/Judge.html";
+							document.title = fkTextDefault.Common.M06_Name;
+							break;
+						case "07":
+							this.text1 = fkTextDefault.Common.Create;
+							document.title = fkTextDefault.Common.M07_Name;
+							break;
+						case "08":
+							console.log("fkTextDefault.Common.WONoBillNOTip",fkTextDefault.Common.WONoBillNOTip)
+							console.log("fkTextDefault.Common.WOBillNO",fkTextDefault.Common.WOBillNO)
+							console.log("fkTextDefault.Common.M08_Name",fkTextDefault.Common.M08_Name)
+							this.title = fkTextDefault.Common.WONoBillNOTip;
+							this.name = fkTextDefault.Common.WOBillNO;
+							this.text1 = fkTextDefault.Common.submit;
+							document.title = fkTextDefault.Common.M08_Name;
+							break;
+						default:
+							break;
+					}
+				},
+
+				skipMain() {
+					var mainUrl;
+					if(['01','02','03','04','05','08'].includes(this.model)){
+					    mainUrl = "../"+this.model+"/Main.html?adviceNo="+this.adviceNo;
+					}else if(this.model === '06_IT'){
+					    mainUrl = "../06/ItCreate.html";
+					}else if(this.model === '06_TO'){
+					    mainUrl = "../06/ToMain.html?adviceNo="+this.adviceNo;
+					}else if(this.model === '07'){
+					    mainUrl = "../07/Main.html";
+					}
+					window.location.href = mainUrl;
+				},
+				
+				onClickLeft() {
+					window.location.href = this.returnUrl;
+				},
+			},
+		});
+	</script>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+	<link rel="stylesheet" href="../Resources/css/vant.css" />
+	<!-- vue.min.js -->
+	<script src="../Resources/js/vue.min.js"></script>
+	<script src="../Resources/js/axios.min.js"></script>
+	<script src="../Resources/js/language/fklanguage.js"></script>
+	<script src="../Resources/js/config.js"></script>
+	<script src="../Resources/js/commom.js"></script>
+	<script src="../Resources/js/vant.min.js"></script>
+	<title></title>
+	<style>
+		body {
+			background-color: #F7F8FA;
+		}
+
+		.btn-div {
+			width: 100%;
+			position: fixed;
+			bottom: 0px;
+		}
+
+		.formDetails-div {
+			margin-bottom: 20px;
+			margin-top: 20px;
+		}
+
+		.wrapper {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+		}
+
+		.inputWrapper {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+		}
+
+		.inputDetails-div {
+			width: 100%;
+			height: 100%;
+			background-color: #F7F8FA;
+		}
+
+		.vancellboarder {
+			border-bottom: 1px solid #eee;
+		}
+
+		.vancellnoboarder {
+			border-bottom: 0px solid #eee;
+		}
+
+		.van-dialog__footer {
+			display: flex;
+		}
+
+		[v-cloak] {
+			display: none;
+		}
+
+		.van-cell__label {
+			color: #000;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak>
+
+		<!-- 弹出 扫码塞值 -->
+		<div style="position: fixed;top:0px;left:0px;width:100%;height:100% ;z-index:5;">
+			<div class="inputWrapper" @click.stop style="overflow: auto;height: 100%;">
+				<div class="inputDetails-div">
+					<van-cell-group :title=fkTextDefault.Common.PlsInputGoods>
+						<van-field style="font-weight:bold" type="textarea" autosize rows="1" v-model="pageData.item"
+							@focus="stopShowKeyboard()" readonly :label=fkTextDefault.Common.Goods></van-field>
+						<van-field type="textarea" autosize rows="1" v-model="pageData.itemdescription" readonly
+							:label=fkTextDefault.Common.GoodsDescription></van-field>
+						<van-field v-model="pageData.batch" @focus="stopShowKeyboard()" :readonly="readonlyfield"
+							:placeholder="batchPlaceholder" :disabled="batchDisabled"
+							:label=fkTextDefault.Common.Batch></van-field>
+
+						<van-field name="stepper" :label=fkTextDefault.Common.Quantity>
+							<template #input>
+								<van-stepper v-model="pageData.quantity " input-width="70px" />
+							</template>
+						</van-field>
+						<van-field v-model="pageData.unit" readonly :label=fkTextDefault.Common.Unit></van-field>
+					</van-cell-group>
+
+					<van-cell-group :title="fkTextDefault.Common.BinInfo">
+						<van-field v-model="pageData.bin" @focus="stopShowKeyboard()" :readonly="binReadonly"
+							:placeholder="binPlaceholder" :disabled="binDisabled" :label="binField"></van-field>
+						<van-field  v-model="pageData.toBin"
+							@focus="stopShowKeyboard()" :readonly="binDisabled" :placeholder="binPlaceholder"
+							:disabled="binDisabled" :label="fkTextDefault.Common.BINTo"></van-field>
+					</van-cell-group>
+
+					<van-cell-group class="btn-div">
+						<van-button style="float: left; width: 50%;" block square type="default" @click="onCloseBtn()"
+							:text=fkTextDefault.Common.back></van-button>
+						<van-button style="float: left; width: 50%;" block square type="info" @click="onSubmitBtn()"
+							:text=fkTextDefault.Common.Confirm></van-button>
+					</van-cell-group>
+
+					<!-- 加载中 -->
+					<van-overlay style="background-color: #fff !important;" :show="isShowOverlay">
+						<div class="wrapper" @click.stop>
+							<van-loading type="spinner" size="50px" color="#1989fa" vertical>
+								<van-button size="large" disabled="true" style="border: none;font-size: 15px;"
+									:text="fkTextDefault.Common.Loading">
+								</van-button>
+							</van-loading>
+						</div>
+					</van-overlay>
+					<a style="display: none;">{{pageFlag}}</a>
+					<div style="width:100%;height:100px;background:#F7F8FA"></div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</body>
+<script>
+	var app = new Vue({
+		el: '#app',
+		data() {
+			return {
+				//页面数据
+				pageData: {
+					item: "",
+					itemid: "",
+					itemdescription: "",
+					usebin: "",
+					islotno: "",
+					quantity: 1,
+					unit: "",
+					batch: "",
+					bin: "",
+					binId: "",
+					toBin: "",
+					toBinId: "",
+				},
+
+				//父页面数据
+				model: "",
+				parentData: [],
+				qtyRemain: 0,
+				binList: [],
+				checkInventory: false,
+				inventoryList: [],
+
+				//页面
+				pageFlag: 0,
+				binField: fkTextDefault.Common.Bin,
+				binReadonly: false,
+				readonlyfield: false,
+				binDisabled: false,
+				binPlaceholder: "",
+				batchDisabled: false,
+				batchPlaceholder: "",
+				isShowOverlay: true,
+			}
+		},
+		created() {
+			this.getParentData();
+		},
+		methods: {
+			//默认焦点时，不弹出软键盘
+			stopShowKeyboard() {
+				this.readonlyfield = true;
+				setTimeout(() => {
+					this.readonlyfield = false;
+				}, 200);
+			},
+
+			//判断库位和批次是否要填
+			checkBatchAndBin() {
+				if (!this.pageData.usebin) {
+					this.binDisabled = true;
+					this.pageData.bin = "";
+					this.binPlaceholder = fkTextDefault.Common.Non_locationGoodsCannotBeEnteredIntoTheLocation;
+				} else {
+					this.binDisabled = false;
+					this.binPlaceholder = ""
+				}
+				if (!this.pageData.islotno) {
+					this.batchDisabled = true;
+					this.pageData.batch = "";
+					this.batchPlaceholder = fkTextDefault.Common.Non_batchGoodsCannotBeEnteredInBatches;
+				} else {
+					this.batchDisabled = false;
+					this.batchPlaceholder = ""
+				}
+			},
+
+			//获取本页面所需要的数据
+			getParentData() {
+				this.parentData = fkcommom.iframe.getData();
+				this.pageData = this.parentData.itemData;
+				console.log("this.pageData", this.pageData)
+				this.binList = JSON.parse(fkcommom.localStorage.get("binList"));
+				this.checkBatchAndBin();
+				this.model = fkcommom.url.getQueryValue("model");
+				console.log("model", this.model)
+				document.title = fkTextDefault.Common.M06_Name;
+				this.binField = fkTextDefault.Common.BINFrom;
+				this.getInventoryList();
+			},
+
+			//获取库存信息
+			getInventoryList() {
+				fkcommom.axios({
+					url: fkconfig.NSSL._get_Inventory,
+					data: {
+						"locationId": fkcommom.localStorage.get('locationId'),
+						"searchText": this.pageData.itemid,
+					}
+				})
+					.then(resp => {
+						if (resp.data.Code == 0) {
+							console.log('货品对应的库存数据：', resp.data.Data);
+							this.inventoryList = resp.data.Data;
+							this.isShowOverlay = false;
+						} else {
+							this.$toast.fail(fkTextDefault.Common.GoodsAcquisitionFailed);
+							console.log('货品对应的库存数据--失败', resp);
+						}
+					}).catch(err => {
+						console.log('失败货品对应的库存数据--失败', err);
+					});
+			},
+
+			//校验库位
+			validateBin(locationId, bin, flag) {
+				let isBinChecked = false;
+				console.log("this.binList", this.binList);
+				if (this.binList && this.binList.length > 0) {
+					for (let i = 0; i < this.binList.length; i++) {
+						if (locationId == this.binList[i].locationid) {
+							if (bin == this.binList[i].bin) {
+								isBinChecked = true;
+								if (flag) {
+									this.pageData.binId = this.binList[i].internalid;
+								} else {
+									this.pageData.toBinId = this.binList[i].internalid;
+								}
+								break;
+							}
+						}
+					}
+				}
+				if (!isBinChecked) {
+					if (flag) {
+						this.$toast.fail(this.binField + fkTextDefault.Common.Invalid);
+					} else {
+						this.$toast.fail(fkTextDefault.Common.BinToInvalid);
+					}
+				}
+				this.pageFlag++;
+				return isBinChecked;
+			},
+
+			//校验库存
+			validateInventory(f) {
+					var isAvailable = false;
+					var isInventoryChecked = false;
+					var availablQty = 0;
+					for (var j = 0; j < this.inventoryList.length; j++) {
+						if (this.inventoryList[j].binNumber == this.pageData.bin && this.inventoryList[j].inventoryNumber == this.pageData.batch) {
+							isAvailable = true;
+							availablQty = this.inventoryList[j].QtyAva;
+							console.log("this.inventoryList[j]", this.inventoryList[j]);
+							if (this.inventoryList[j].QtyAva >= this.pageData.quantity) {
+								isInventoryChecked = true;
+							}
+						}
+					}
+					if (isAvailable) {
+						if (isInventoryChecked) {
+							f();
+						} else {
+							this.$toast.fail(fkTextDefault.Common.AvailableInventoryQuantity + availablQty);
+						}
+					} else {
+						this.$toast.fail(fkTextDefault.Common.UnAvailableInventoryQuantity);
+					}
+			},
+
+			//取消
+			onCloseBtn() {
+				fkcommom.iframe.cancel();
+				fkcommom.iframe.disposal();
+			},
+
+			//确定
+			onSubmitBtn() {
+				let _this = this;
+				let isInputChecked = this.checkInputData();
+				if (isInputChecked) {
+					if (_this.binDisabled) {
+						_this.validateInventory(function () {
+							fkcommom.iframe.returnData(_this.pageData);
+							fkcommom.iframe.disposal();
+						});
+					} else {
+						var locationId = this.pageData.locationId;
+						var isBinChecked = _this.validateBin(locationId, _this.pageData.bin, true);
+						if (isBinChecked) {
+							if (this.pageData.toBin) {
+								if (this.pageData.toLocationId) {
+									locationId = this.pageData.toLocationId;
+								}
+								var isToBinChecked = _this.validateBin(locationId, _this.pageData.toBin, false);
+								if (isToBinChecked) {
+									_this.validateInventory(function () {
+										fkcommom.iframe.returnData(_this.pageData);
+										fkcommom.iframe.disposal();
+									});
+								}
+							} else {
+								_this.validateInventory(function () {
+									fkcommom.iframe.returnData(_this.pageData);
+									fkcommom.iframe.disposal();
+								});
+							}
+						}
+
+					}
+				}
+			},
+
+			//校验inputData是否必填
+			checkInputData() {
+				let isChecked = true;
+				let msg = "";
+				//必填项校验
+				//货品不能为空
+				if (isChecked && this.pageData.item == "") {
+					isChecked = false;
+					msg = fkTextDefault.Common.ItemCannotBeEmpty;
+				}
+				//批次校验
+				if (isChecked && this.pageData.islotno && this.pageData.batch == "") {
+					isChecked = false;
+					msg = fkTextDefault.Common.BatchCannotBeEmpty;
+				}
+				//仓位校验
+				if (isChecked && this.pageData.usebin && this.pageData.bin == "") {
+					isChecked = false;
+					msg = this.binField + fkTextDefault.Common.CannotBeEmpty;
+				}
+				//仓位校验
+				if (isChecked && this.pageData.usebin && this.pageData.toBin == "") {
+					isChecked = false;
+					msg = fkTextDefault.Common.BINToCannotBeEmpty;
+				}
+
+				this.$toast.fail(msg);
+				return isChecked;
+			},
+		},
+	});
+
+</script>
+
+</html>

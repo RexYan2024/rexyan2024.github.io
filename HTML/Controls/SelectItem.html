@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+
+		<link rel="stylesheet" href="../Resources/css/vant.css" />
+		<script src="../Resources/js/language/fklanguage.js"></script>
+		<script src="../Resources/js/config.js"></script>
+		<script src="../Resources/js/commom.js"></script>
+		<!-- vue.min.js -->
+		<script src="../Resources/js/vue.min.js"></script>
+		<!-- vant.min.js -->
+		<script src="../Resources/js/vant.min.js"></script>
+		<script src="../Resources/js/axios.min.js"></script>
+		<title></title>
+		<style>
+			body {
+				background-color: #F7F8FA;
+			}
+			.btn-div {
+				width: 100%;
+				position: fixed;
+				bottom: 0px;
+			}
+			.listcard-div {
+				border: 1px #EEF0F3 solid;
+				margin: 8px;
+			}
+			.listcard-div p {
+				font-size: 14px;
+				padding-left: 20px;
+			}
+			.wrapper {
+			    display: flex;
+			    align-items: center;
+			    justify-content: center;
+			    height: 100%;
+			  }
+			
+			.van-overlay {
+			    background-color: #fff !important;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<form >
+				<van-search style=" position: fixed;z-index:1; top: 0px; left: 0px;width: 100%;" v-model="SearchText" :placeholder=fkTextDefault.Common.PleaseEnterSearchKeywords
+				 input-align="center" @search="onSearch" clearable show-action @cancel="onCancel">
+				  <template #action>
+				     <div @click="onSearch">{{fkTextDefault.Common.QueryBtn}}</div>
+				   </template>
+				   </van-search>
+
+				<van-pull-refresh v-model="isDownLoading" :success-text=fkTextDefault.Common.RefreshSuccess @refresh="onRefresh">
+					<van-list v-model="isUpLoading" :finished="upFinished" :immediate-check="false" :offset="10" @load="onLoad">
+						<div style="margin-top: 65px;">
+							
+							<van-radio-group v-model="selectedItem" >
+							  <van-cell-group v-for="v in listcardData" >
+							    <van-cell clickable @click="onRadioClick(v)" center  :title="v.item" :label="v.itemdescription" center="true" clickable @click="selectedItem = v.internalid">
+							      <template #right-icon>
+							        <van-radio :name="v.internalid"  />
+							      </template>
+							    </van-cell>
+							  </van-cell-group>
+							</van-radio-group>
+							
+							<van-empty :description=fkTextDefault.Common.EmptyTip v-if="isShowEmpty"></van-empty>
+						</div>
+					</van-list>
+				</van-pull-refresh>
+				<div class="btn-div" @click.stop>
+					<van-button style="float: left; width: 50%;" square block type="default" plain @click="onCancel()" native-type="reset"
+						:text=fkTextDefault.Common.back></van-button>
+					<van-button style="float: left; width: 50%;" square block type="info" @click="onSelected()" native-type="reset"
+						:text=fkTextDefault.Common.Confirm></van-button>
+					
+				
+				</div>
+			</form>
+
+			<van-overlay :show="isShowOverlay" @click="show = false">
+				<div class="wrapper" @click.stop>
+					<van-loading type="spinner" size="50px" color="#1989fa" vertical>
+						<van-button size="large" disabled="true" style="border: none;font-size: 15px;" :title=fkTextDefault.Common.Loading></van-button>
+					</van-loading>
+				</div>
+			</van-overlay>
+		</div>
+	</body>
+	<script>
+		var app = new Vue({
+			el: '#app',
+			data() {
+				return {
+					isShowEmpty: false, 					//搜索结果为空  显示
+					isShowOverlay: true, 					//搜索过程中显示
+					SearchText: '', 						//搜索框的内容
+					isDownLoading: false, 					//下拉刷新
+					upFinished: false, 						//上拉加载完毕
+					isUpLoading: false, 					//上拉刷新
+					offset: 100, 							//滚动条与底部距离小于 offset时  触发load事件
+					listcardData: [], 						//请求数据
+					pageIndex: 0, 							//页码
+					pageSize: 10, 							//每页条数
+					selectedItem:'',                        //选中项
+					selectedData:"",
+				};
+			},
+			//生命周期---初始化数据
+			created() {
+				this.init()
+			},
+			methods: {
+				init() {
+					this.showOverlay(); 
+					this.getData(); 
+				},
+				showOverlay() {
+					this.isShowOverlay = true;
+				},
+				getData() {
+					const _this = this;
+					this.isShowEmpty = false;
+					var extra_filter = [];
+					if (this.SearchText && this.SearchText != "") {
+						extra_filter = [
+							"name", "CONTAINS", this.SearchText,
+						];
+					}
+					console.log('extra_filter', extra_filter);
+					fkcommom.axios({
+							data: {
+								"search_id": "customsearch_hc_wms_item_list",
+								"extra_filter": extra_filter,
+								"use_page": true,
+								"page": this.pageIndex,
+								"size": this.pageSize,
+							},
+						},this)
+						.then(resp => {
+							this.isShowOverlay = false; //post请求一结束   就隐藏掉加载
+			
+							const responseCode = resp.data.Code;
+							if (responseCode == 300) {
+								this.upFinished = false;
+								const rows = resp.data.Data;
+								console.log('rows', rows);
+								
+								if (rows == null || rows.length === 0) {
+									
+									_this.upFinished = true;				//加载结束
+									_this.isShowEmpty = true;				//显示无数据
+									_this.listcardData = [];
+									return
+								}
+			
+								if (rows.length < _this.pageSize) {
+									
+									_this.upFinished = true;				//最后一页不足十条的情况
+								}
+			
+								if (_this.pageIndex === 0) {
+									_this.listcardData = rows;
+								} else {
+									_this.listcardData = _this.listcardData.concat(rows)
+								}
+							}
+							_this.isDownLoading = false;
+							_this.isUpLoading = false;
+			
+						}).catch(err => {
+							console.log('失败log', err);
+						}).finally(() => {
+							_this.isDownLoading = false;
+							_this.isUpLoading = false;
+						})
+				},
+				//上拉加载
+				onLoad() {
+					//this.upFinished = true;	
+					this.pageIndex++;
+					console.log("onLoad",this.pageIndex)
+					this.getData();
+				},
+				//下拉加载
+				onRefresh() {
+					
+					this.listcardData = [];
+					this.pageIndex = 0;
+					//this.upFinished = false; //不写会导致上拉到底后，不能在下拉刷新不触发事件
+					console.log("onRefresh",this.pageIndex)
+					this.getData();
+				},
+				onSearch(val) {
+					this.isShowEmpty=false;
+					this.upFinished = true;	
+					this.listcardData = [];
+					this.isShowOverlay = true;
+					this.pageIndex = 0;
+					//this.upFinished = false;	
+					
+					this.getData();
+				},
+				onCancel(val) {
+					fkcommom.iframe.cancel();
+					fkcommom.iframe.disposal();
+				},
+				onSelected(){
+					console.log(this.selected);
+					fkcommom.iframe.returnData(this.selected);
+					fkcommom.iframe.disposal();
+				},
+				onRadioClick(item){
+					this.selected=item;
+					this.selectedItem=item.internalid;
+					console.log(this.selected);
+				}
+			},
+		});
+		
+	</script>
+</html>

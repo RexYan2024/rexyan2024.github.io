@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+		<!-- vant.css -->
+		<link rel="stylesheet" href="../Resources/css/vant.css" />
+		<script src="../Resources/js/language/fklanguage.js"></script>
+		<script src="../Resources/js/commom.js"></script>
+		<script src="../Resources/js/config.js"></script>
+		<!-- vue.min.js -->
+		<script src="../Resources/js/vue.min.js"></script>
+		<!-- vant.min.js -->
+		<script src="../Resources/js/vant.min.js"></script>
+		<style>
+			body {
+				background-color: #F7F8FA;
+			}
+			#app{
+				padding-top: 10px;
+			}
+			/* 去除原生CSS样式的padding-right:10px */
+			#app .van-grid-item{
+				padding: 0 !important;
+			}
+			/* 去除原生CSS样式的background-color: white */
+			#app .van-grid-item__content {
+				background-color:transparent !important;
+			}
+			.van-grid-item {
+				min-height: 80px;
+			}
+			/* 去除原生icon左侧内边距10px */
+			.van-grid-item__icon {
+				padding-left: 0px !important;
+			}
+			.van-grid {
+				padding-right: 10px;
+			}
+			.van-grid-item__content--center {
+				-webkit-justify-content: flex-start !important;
+				justify-content: flex-start !important;
+			}
+			.van-grid-item__icon {
+				padding-left: 10px;
+			}
+			.van-grid-item__text {
+				/**margin-left: 30px !important;*/
+				font-size: 18px;
+				color: white;
+			}
+			.wrapper {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				height: 100%;
+			}
+			 .van-grid-item{
+				box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+			}
+
+			 /* .van-grid-item:hover{
+				transform: scale(1.01);
+			} */
+			 .van-grid-item:active{
+				transform: scale(0.96);
+			}
+		</style>
+		<title>微驿仓</title>
+	</head>
+	<body>
+		
+		<div class="main-div">
+			<div id="app" style="margin-bottom:10px;">
+				
+					<van-grid  :column-num="2" border :gutter="10"class='aaa'>
+						<van-grid-item v-for="(v, i) in icons" :icon="v.iconUrl" :text="v.name"  :style="v.backgroundColor"@click="onclick(v.linkUrl)"></van-grid-item>
+					</van-grid>
+				
+				<div style="display: none;">{{a}}</div>
+				<!-- 加载中 -->
+				<van-overlay style="background-color: #fff !important;" :show="isShowOverlay" @click="show = false">
+					<div class="wrapper" @click.stop>
+						<van-loading type="spinner" size="50px" color="#1989fa" vertical>
+							<van-button size="large" disabled="true" style="border: none;font-size: 15px;" :text=fkTextDefault.Common.Loading >
+							</van-button>
+						</van-loading>
+					</div>
+				</van-overlay>
+				
+				<van-overlay style="background-color: rgba(0, 0, 0, 0);" :show="isDisabled" @click="alertDisabled">
+					<div class="wrapper">
+						<!-- <div class="block" /> -->
+					</div>
+				</van-overlay>
+			</div>
+		</div>
+	</body>
+	<script >
+	  var app = new Vue({
+		  el: '#app',
+		  data() {
+		      return {
+		  		icons: [
+		  			{"id":'001',"name": fkText.Default.Common.M01_Name, 
+					  "iconUrl": '../Resources/image/01.png', 
+					  "backgroundColor": 'background-color: #E3B134;', 
+					  "linkUrl": "../Controls/Scan.html?model=01"},
+		  			{"id":'002',"name": fkText.Default.Common.M02_Name,
+					  "iconUrl": '../Resources/image/02.png',
+					   "backgroundColor": 'background-color: #63AFA3;', 
+					   "linkUrl": "../Controls/Scan.html?model=02"},
+		  			{"id":'003',"name": fkText.Default.Common.M03_Name, 
+					  "iconUrl": '../Resources/image/03.png', 
+					  "backgroundColor": 'background-color: #2F7DA9;', 
+					  "linkUrl": "../Controls/Scan.html?model=03"},
+		  			{"id":'004',"name": fkText.Default.Common.M04_Name, 
+					  "iconUrl": '../Resources/image/04.png', 
+					  "backgroundColor": 'background-color: #EB6C37;', 
+					  "linkUrl": "../Controls/Scan.html?model=04"}, 
+		  			{"id":'005',"name": fkText.Default.Common.M05_Name,
+					  "iconUrl": '../Resources/image/05.png', 
+					  "backgroundColor": 'background-color: #8C8B91;', 
+					  "linkUrl": "../Controls/Scan.html?model=05"},
+		  			{"id":'006',"name": fkText.Default.Common.M06_Name, 
+					  "iconUrl": '../Resources/image/06.png', 
+					  "backgroundColor": 'background-color: #AB5A29;', 
+					  "linkUrl": "../06/Judge.html"}, 
+		  			{"id":'007',"name": fkText.Default.Common.M07_Name, 
+					  "iconUrl": '../Resources/image/07.png',
+					  "backgroundColor": 'background-color: #50AC61;', 
+					  "linkUrl": "../Controls/Scan.html?model=07"},
+		  			{"id":'008',"name": fkText.Default.Common.M08_Name, 
+					  "iconUrl": '../Resources/image/08.png', 
+					  "backgroundColor": 'background-color: #532E76;', 
+					  "linkUrl": "../Controls/Scan.html?model=08"},
+		  		],
+		  		isShowOverlay: true,
+		  		isDisabled: false,
+		  		a: 0,
+		      };
+		  },
+		  created() {
+			  this.getUserMsg();
+		  },
+		  methods: {
+			onclick(v){
+				console.log(v);
+				
+				setTimeout(() => {
+				
+					console.log('111111',v)
+					window.location.href = v;
+				}, 170);
+			  },
+		  	alertDisabled() {
+		  		if(this.isDisabled) {
+		  			vant.Dialog.alert({
+		  				title: fkTextDefault.Common.TipTitle,
+		  				message: fkTextDefault.Common.PleaseEnterEmployeeLocation
+		  			});
+		  		}
+		  	},
+		  	getUserMsg() {
+				let email = fkcommom.url.getQueryValue("username");
+				if(!email){
+					email = fkcommom.cookie.getCookie("username");
+				}
+				console.log("email",email);
+		  		// let email = fkcommom.cookie.getCookie("username");
+		  		fkcommom.axios({
+		  				data: {
+		  					search_id: "customsearch_hc_wms_common_employee_msg",
+		  					extra_filter: [
+		  						["email", "is", email]
+		  					],
+		  				}
+		  			})
+		  			.then(resp => {
+		  				console.log('resp', resp);
+		  				var rows = resp.data;
+		  				let locationId = '';
+		  				this.a++;
+		  				if(rows.Code == 300) {
+		  					this.isShowOverlay = false;
+		  					var responseData = rows.Data;
+		  					if(responseData && responseData.length > 0) {
+		  						locationId = responseData[0].locationId;
+		  						let location = responseData[0].location;
+		  						fkcommom.localStorage.set("locationId", locationId)
+		  						fkcommom.localStorage.set("locationName", location)
+		  						
+		  						fkcommom.axios({
+		  								data: {
+		  									search_id: "customsearch_hc_wms_bin_list",
+		  									extra_filter: [
+		  									],
+		  								},
+		  							}).then(resp => {
+		  								var binList = resp.data.Data;
+		  								fkcommom.localStorage.set("binList", JSON.stringify(binList))
+		  							});
+		  					}
+		  				}
+		  				
+		  				if (rows.Data.length == 0 || rows.Code == 1 || locationId == '' || locationId == null || locationId == undefined) {
+		  					this.isShowOverlay = false;
+		  					this.isDisabled = true;
+		  					vant.Dialog.alert({
+		  						title: fkTextDefault.Common.TipTitle,
+		  						message: fkTextDefault.Common.PleaseEnterEmployeeLocation
+		  					});
+		  				}
+		  				
+		  			}).catch(err => {
+		  				console.log('失败log', err);
+		  			});
+		  	}
+		  }
+	  });
+	 
+	</script>
+</html>

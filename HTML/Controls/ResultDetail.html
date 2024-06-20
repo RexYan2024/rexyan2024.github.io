@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+
+		<link rel="stylesheet" href="../Resources/css/vant.css" />
+		<!-- vue.min.js -->
+		<script src="../Resources/js/vue.min.js"></script>
+		<script src="../Resources/js/axios.min.js"></script>
+		<script src="../Resources/js/language/fklanguage.js"></script>
+		<script src="../Resources/js/config.js"></script>
+		<script src="../Resources/js/commom.js"></script>
+		<script src="../Resources/js/vant.min.js"></script>
+		<title></title>
+		<style>
+			body {
+				background-color: #F7F8FA;
+			}
+			.btn-div {
+				width: 100%;
+				position: fixed;
+				bottom: 0px;
+			}
+			.formDetails-div {
+				margin-bottom: 20px;
+				margin-top: 20px;
+			}
+			.wrapper {
+			    display: flex;
+			    align-items: center;
+			    justify-content: center;
+			    height: 100%;
+			}
+			.inputWrapper {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				height: 100%;
+			}
+			.inputDetails-div {
+				width: 100%;
+				height: 100%;
+				background-color: #F7F8FA;
+			}
+			.vancellboarder{
+				border-bottom: 1px solid #eee;
+			}
+			.vancellnoboarder{
+				border-bottom: 0px solid #eee;
+			}
+			[v-cloak] {
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app" v-cloak>
+			<van-form style="padding-bottom: 80px;" onkeydown="if(event.keyCode==13)return false;">
+				<van-nav-bar :left-text=fkTextDefault.Common.back left-arrow  @click-left="onClickLeft"></van-nav-bar>
+				<div style="border:1px solid #eee;">
+                        
+                        <van-cell 
+                        v-if="['01','02','03','04','06_TO'].includes(model)"
+                        :title=fkTextDefault.Common.CreateFrom :value="createdfrom"></van-cell> 
+										
+                        <van-cell 
+                        :title=fkTextDefault.Common.OrderNo :value="tranid" ></van-cell>
+										
+                        <van-cell 
+                        :title=fkTextDefault.Common.Date :value="trandate" ></van-cell>
+					
+                        <van-cell 
+                        v-if="['02','05','06_TO','07'].includes(model)"
+                        :title=fkTextDefault.Common.Warehouse :value="location" ></van-cell>
+					
+                        <van-cell 
+                        v-if="['02'].includes(model)"
+                        :title=fkTextDefault.Common.Supplier :value="vendor" ></van-cell>
+                        
+                        <!-- <van-cell 
+                        v-if="[].includes(model)"
+                        :title=fkTextDefault.Common.Warehouse :value="location" ></van-cell> -->
+                        
+                        <van-cell 
+                        v-if="['05'].includes(model)"
+                        :title=fkTextDefault.Common.ApprovalStatus :value="status" ></van-cell>
+                                              
+                        <van-cell 
+                        v-if="['06_IT'].includes(model)"
+                        :title=fkTextDefault.Common.OutBin :value="fromLocation" ></van-cell>
+                                              
+                        <van-cell 
+                        v-if="['06_IT'].includes(model)"
+                        :title=fkTextDefault.Common.InBin :value="toLocation" ></van-cell>
+					
+				</div>
+
+                <van-divider>{{fkTextDefault.Common.Detail}}</van-divider>
+
+                <div v-for="(item,index) in dataitems" v-if="['07'].includes(model)">
+					<div style="margin-top: 6px;box-shadow: 2px 2px 2px #888888;">
+						<div>
+							<van-cell center  :title='item.item' :value="'x '+item.quantity+' '+item.unit" style="font-size:10px;line-height: 12px;" />
+						</div>
+
+						<van-collapse v-model="item.activeNames" style="font-size:10px;line-height: 12px;">
+							<van-collapse-item :title=fkTextDefault.Common.InventoryDetails  style="font-size:10px;line-height: 12px;">
+								<div v-for="(v,index) in item.invdetail">
+									<van-cell style="background: #eee;font-size:10px;line-height: 12px;border-bottom: solid 1px #fff;" center :label="fkTextDefault.Common.Quantity+':'+v.quantity" :title="fkTextDefault.Common.Batch+':'+v.batch">
+										{{fkTextDefault.Common.BINFrom}}:{{v.frombin}}</br>
+										{{fkTextDefault.Common.BINTo}}:{{v.tobin}}</br>
+									</van-cell>
+								</div>
+							</van-collapse-item>
+						</van-collapse>
+					</div>
+				</div>
+
+                <div v-for="(item, index) in items" v-if="['06_IT'].includes(model)">
+					<div style="margin-top: 6px;box-shadow: 2px 2px 2px #888888;">
+						<div>
+							<van-cell center  :title='item.item' :value="'x '+item.quantity+' '+item.unit" style="font-size:10px;line-height: 12px;" />
+						</div>
+					
+						<van-collapse v-if="item.islotno || item.usebin" v-model="item.activeNames" style="font-size:10px;line-height: 12px;">
+							<van-collapse-item :title=fkTextDefault.Common.InventoryDetails  style="font-size:10px;line-height: 12px;">
+								<div v-for="(v,index) in item.invdetail">
+									<van-cell style="background: #eee;font-size:10px;line-height: 12px;border-bottom: solid 1px #fff;" center :label="fkTextDefault.Common.Quantity+':'+v.quantity" :title="fkTextDefault.Common.Batch+':'+v.batch">
+										{{fkTextDefault.Common.BINFrom}}: {{v.frombin}}</br>
+										{{fkTextDefault.Common.BINTo}}: {{v.tobin}}</br>
+									</van-cell>
+								</div>
+							</van-collapse-item>
+						</van-collapse>
+					</div>
+                </div>
+                
+                
+                <div v-for="(item,index) in dataitems" v-if="['05'].includes(model)">
+					<div style="margin-top: 6px;box-shadow: 2px 2px 2px #888888;">
+						<div>
+							<van-cell center  :title="item.item" :label="'库位:'+item.bin" :value="'x '+item.quantity+' '+item.unit" style="font-size:10px;line-height: 12px;" />
+						</div>
+				
+						<van-collapse v-model="item.activeNames" style="font-size:10px;line-height: 12px;">
+							<van-collapse-item :title=fkTextDefault.Common.InventoryDetails :name="item.itemid" style="font-size:10px;line-height: 12px;">
+								<div v-for="(v,index) in item.invdetail">
+									<van-cell style="background: #eee;font-size:10px;line-height: 12px;border-bottom: solid 1px #fff;" center :title="fkTextDefault.Common.Batch+':'+v.batch" :value="fkTextDefault.Common.Quantity+':'+v.quantity"  />
+								</div>
+							</van-collapse-item>
+						</van-collapse>
+					</div>
+                </div>
+                
+				
+				<div v-for="(item, index) in items" v-if="flag">
+					<div style="margin-top: 6px;box-shadow: 2px 2px 2px #888888;">
+						<div>
+							<van-cell center  :title='item.item' :value="'x '+item.quantity+' '+item.unit" style="font-size:10px;line-height: 12px;" />
+						</div>
+                        
+						<van-collapse  v-if="item.islotno || item.usebin" v-model="item.activeNames" style="font-size:10px;line-height: 12px;">
+							<van-collapse-item :title=fkTextDefault.Common.InventoryDetails  style="font-size:10px;line-height: 12px;">
+								<div v-for="(v,index) in item.invdetail">
+									<van-cell style="background: #eee;font-size:10px;line-height: 12px;border-bottom: solid 1px #fff;" center :label="fkTextDefault.Common.Quantity+':'+v.quantity" :title="fkTextDefault.Common.Batch+':'+v.batch">
+										{{fkTextDefault.Common.Bin}}: {{v.bin}}</br>
+									</van-cell>
+								</div>
+							</van-collapse-item>
+						</van-collapse>
+					</div>
+				</div>
+			</van-form>
+
+			<!-- 加载中 -->
+			<van-overlay style="background-color: #fff !important;" :show="isShowOverlay" @click="show = false">
+				<div class="wrapper" @click.stop>
+					<van-loading type="spinner" size="50px" color="#1989fa" vertical>
+						<van-button size="large" disabled="true" style="border: none;font-size: 15px;" :text=fkTextDefault.Common.Loading ></van-button>
+					</van-loading>
+				</div>
+			</van-overlay>
+		</div>
+	</body>
+	<script>
+		document.title = fkTextDefault.Common.M02_Name;
+		var app = new Vue({
+			el: '#app',
+			data() {
+				return {
+                    model:'',
+					flag:true,
+						internalid: '',
+						tranid: '', 							
+						trandate: '', 
+						location: '',
+						vendor: '',
+						createdfrom: '',
+						items: [],
+                    dataitems: [],
+                    status:'',
+                    fromLocation:'',
+                    toLocation:'',
+
+					isShowOverlay: true, 
+				}
+			},
+			created() {
+				this.getlist();
+			},
+			methods: {
+				onClickLeft() {
+                    var returnUrl;
+                    switch(this.model){
+                        case '01':
+                        returnUrl = 'ResultList.html?model=01';
+                        break;
+                        case '02':
+                        returnUrl = 'ResultList.html?model=02';
+                        break;
+                        case '03':
+                        returnUrl = 'ResultList.html?model=03';
+                        break;
+                        case '04':
+                        returnUrl = 'ResultList.html?model=04';
+                        break;
+                        case '05':
+                        returnUrl = 'ResultList.html?model=05';
+                        break;
+                        case '06_IT':
+                        returnUrl = 'ResultList.html?model=06_IT';
+                        break;
+                        case '06_TO':
+                        returnUrl = 'ResultList.html?model=06_TO';
+                        break;
+                        case '07':
+                        returnUrl = 'ResultList.html?model=07';
+                        break;
+                        case '08':
+                        returnUrl = 'ResultList.html?model=08';
+                        break;
+                    }
+				    location.href = returnUrl;
+				},
+				getlist() {
+                    // this.model = window.localStorage.getItem('model')
+                    this.model = fkcommom.url.getQueryValue('model');
+                    var searchId;
+                    var extraFilter;
+                    switch(this.model){
+                        case '01': 
+                            searchId = "customsearch_hc_wms_ir_inventory_detail";
+                            document.title = fkTextDefault.Common.M01_Name;
+                            break;
+                        case '02': 
+                            searchId = "customsearch_hc_wms_vr_if_list";
+                            document.title = fkTextDefault.Common.M02_Name;
+                            break;
+                        case '03': 
+                            searchId = "customsearch_hc_wms_if_inventory_detail";
+                            document.title = fkTextDefault.Common.M03_Name;
+                            break;
+                        case '04': 
+                            searchId = "customsearch_hc_wms_svr_ir_detail";
+                            document.title = fkTextDefault.Common.M04_Name;
+                            break;
+                        case '05': 
+                            searchId = "customsearch_hc_wms_ic_item_detail";
+                            document.title = fkTextDefault.Common.M05_Name;
+                            break;
+                        case '06_IT': 
+                            searchId = "customsearch_hc_wms_it_detail";
+                            document.title = fkTextDefault.Common.M06_Name;
+                            break;
+                        case '06_TO': 
+                            searchId = "customsearch_hc_wms_to_ifir_detail";
+                            document.title = fkTextDefault.Common.M06_Name;
+                            break;
+                        case '07': 
+                            searchId = "customsearch_hc_wms_bt_item_list";
+                            document.title = fkTextDefault.Common.M07_Name;
+                            break;
+                        case '08': 
+                            searchId = "customsearch_hc_wms_ab_inventory_detail";
+                            document.title = fkTextDefault.Common.M08_Name;
+                            break;
+                    }
+                    if(['01','02','03','04','05','06_IT','07','08'].includes(this.model)){
+                        extraFilter = "anyof"
+                    }else{
+                        extraFilter = "is"
+                    }
+
+
+					var internalid = fkcommom.url.getQueryValue('internalid');
+					if (internalid) {
+						fkcommom.axios({
+								data: {
+									"search_id": searchId,
+									"extra_filter": [
+										["internalid", extraFilter, internalid]
+									],
+									"use_page": false,
+									"merge_data": true,
+									"merge_by": "invdetail",
+								}
+							})
+							.then(resp => {
+								
+								this.isShowOverlay = false;
+								
+								if (resp.data.Code == 300) {
+                                    console.log("resp.data",resp.data);
+									for(var i = 0;i < resp.data.Data.length;i++){
+                                        resp.data.Data[i].activeNames = [];
+                                        //同一个line需要合并
+										for(var j = 0;j < resp.data.Data.length;j++){
+                                            if(i == j) continue;
+                                            
+											if(resp.data.Data[i].lineno == resp.data.Data[j].lineno){
+												var _invdetail = resp.data.Data[j].invdetail;
+												_invdetail = fkcommom.clone(_invdetail);
+												resp.data.Data[i].invdetail = resp.data.Data[i].invdetail.concat(_invdetail);
+												resp.data.Data.splice(j,1);
+												j--;
+											}
+										}
+                                    }
+                                    
+                                    //start
+                                    switch(this.model){
+                                        case '01':
+                                        
+                                        var responseData = resp.data.Data;
+                                        this.items = responseData;
+                                        console.log("responseData", JSON.stringify(responseData));
+                                        this.createdfrom = responseData[0].createdfrom;
+                                        this.tranid = responseData[0].tranid;
+                                        this.trandate = responseData[0].trandate;
+                                        this.internalid = responseData[0].internalid;
+                                        break;
+                                        case '02':
+                                        
+                                        var responseData = resp.data.Data;
+                                        this.items = responseData;
+                                        console.log('~~~~~~~this.items',this.items)
+                                        this.tranid = responseData[0].tranid;
+                                        this.trandate = responseData[0].trandate;
+                                        this.location = responseData[0].location;
+                                        this.vendor = responseData[0].vendor;
+                                        this.createdfrom = responseData[0].createdfrom;
+                                        this.internalid = responseData[0].internalid;
+                                        break;
+                                        case '03':
+                                        var responseData = resp.data.Data;
+                                        console.log("responseData", JSON.stringify(responseData));
+                                        this.items = responseData;
+                                        this.createdfrom = responseData[0].createdfrom;
+                                        this.tranid = responseData[0].tranid;
+                                        this.trandate = responseData[0].trandate;
+                                        this.internalid = responseData[0].internalid;
+                                        break;
+                                        case '04':
+                                        var responseData = resp.data.Data;
+                                        console.log("responseData", JSON.stringify(responseData));
+                                        this.items = responseData;
+                                        this.createdfrom = responseData[0].createdfrom;
+                                        this.tranid = responseData[0].tranid;
+                                        this.trandate = responseData[0].trandate;
+                                        this.internalid = responseData[0].internalid;
+                                        break;
+                                        case '05':
+                                        // var responseData = resp.data.Data;
+                                        // console.log("responseData", JSON.stringify(responseData));
+                                        // this.items = responseData;
+                                        // this.internalid = responseData[0].internalid;
+                                        // this.tranid = responseData[0].tranid;
+                                        // this.trandate = responseData[0].trandate;
+                                        // this.location = responseData[0].location;
+                                        // this.status = responseData[0].status;
+                                        this.dataitems = resp.data.Data;
+                                        console.log("this.dataitems", JSON.stringify(this.dataitems));
+                                        this.internalid = this.dataitems[0].internalid;
+                                        this.tranid = this.dataitems[0].tranid;
+                                        this.trandate = this.dataitems[0].trandate;
+                                        this.location = this.dataitems[0].location;
+                                        this.status = this.dataitems[0].status;
+                                        break;
+                                        case '06_IT':
+                                        this.flag = false;
+                                        var responseData = resp.data.Data;
+                                        this.items = responseData;
+                                        this.tranid = responseData[0].tranid;
+                                        this.trandate = responseData[0].trandate;
+                                        this.fromLocation = responseData[0].fromLocation;
+                                        this.toLocation = responseData[0].toLocation;
+                                        this.internalid = responseData[0].internalid;
+                                        break;
+                                        case '06_TO':
+                                        var responseData = resp.data.Data;
+                                        this.items = responseData;
+                                        this.internalid = responseData[0].internalid;
+                                        this.tranid = responseData[0].tranid;
+                                        this.trandate = responseData[0].trandate;
+                                        this.location = responseData[0].location;
+                                        this.createdfrom = responseData[0].createdfrom;
+                                        break;
+                                        case '07':
+                                        this.flag = false;
+                                        for(var k = 0;k < resp.data.Data.length;k+=2) {
+                                        var respOneInv = resp.data.Data[k].invdetail;
+                                        var respTwoInv = resp.data.Data[k+1].invdetail;
+									
+                                        for(var m = 0;m < respOneInv.length;m++) {
+                                            var respOneInvJSON = respOneInv[m];
+                                            for(var n = 0;n < respTwoInv.length;n++){
+                                                var respTwoInvJSON = respTwoInv[n];
+                                                if(respOneInvJSON.batch == respTwoInvJSON.batch &&
+                                                    respOneInvJSON.quantity == respTwoInvJSON.quantity) {
+                                                    var tobinNumber = respTwoInvJSON.tobin;
+                                                    respOneInvJSON["tobin"] = tobinNumber
+                                                }
+                                            }
+                                        }
+                                        resp.data.Data[k+1].isDelete = true;
+                                        }
+                                        console.log("resp.data.Data",resp.data.Data)
+                                        for(var p = resp.data.Data.length-1;p >= 0;p--) {
+                                            if(resp.data.Data[p].isDelete){
+                                                resp.data.Data.splice(p,1);
+                                            }
+                                        }
+                                        
+                                        this.dataitems = resp.data.Data;
+                                        console.log("this.dataitems", this.dataitems);
+                                        this.items = this.dataitems;
+                                        this.tranid = this.dataitems[0].tranid;
+                                        this.trandate = this.dataitems[0].trandate;
+                                        this.location = this.dataitems[0].location;
+                                        this.internalid = this.dataitems[0].internalid;
+                                        break;
+                                        case '08':
+                                        var responseData = resp.data.Data;
+                                        this.items = responseData;
+                                        console.log("responseData", JSON.stringify(responseData));
+                                        console.log("111", "111");
+                                        this.tranid = responseData[0].tranid;
+                                        this.trandate = responseData[0].trandate;
+                                        this.internalid = responseData[0].internalid;
+                                        break;
+
+                                    }
+                                    //end
+									
+									
+								}else {
+									console.log('失败log', resp.data);
+								}
+							}).catch(err => {
+								console.log('失败log', err);
+							});
+					}
+				},
+			},
+		});
+		
+	</script>
+</html>

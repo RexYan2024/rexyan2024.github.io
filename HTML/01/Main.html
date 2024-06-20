@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+		<link rel="stylesheet" href="../Resources/css/vant.css" />
+		<!-- vue.min.js -->
+		<script src="../Resources/js/vue.min.js"></script>
+		<script src="../Resources/js/axios.min.js"></script>
+		<script src="../Resources/js/language/fklanguage.js"></script>
+		<script src="../Resources/js/config.js"></script>
+		<script src="../Resources/js/commom.js"></script>
+		<script src="../Resources/js/vant.min.js"></script>
+		<title></title>
+		<style>
+			body {
+			background-color: #F7F8FA;
+		}
+		.btn-div {
+			width: 100%;
+			position: fixed;
+			bottom: 0px;
+		}
+		.formDetails-div {
+			margin-bottom: 20px;
+			margin-top: 20px;
+		}
+		.wrapper {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+		}
+		.inputWrapper {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+		}
+		.inputDetails-div {
+			width: 100%;
+			height: 100%;
+			background-color: #F7F8FA;
+		}
+		.vancellboarder {
+			border-bottom: 1px solid #eee;
+		}
+		.vancellnoboarder {
+			border-bottom: 0px solid #eee;
+		}
+		.van-dialog__footer {
+			display: flex;
+		}
+		[v-cloak] {
+			display: none;
+		}
+		.van-cell__label{
+			color:#000;
+		}
+		.hp_font_small{
+			font-size: 8px !important;
+		}
+	</style>
+	</head>
+	<body>
+		<div id="app" v-cloak>
+			<van-form style="padding-bottom: 80px;" onkeydown="if(event.keyCode==13)return false;">
+				<van-row style="background: #fff;border-bottom: solid 1px #eee;">
+					<van-col span="1" style="background: #fff;">
+						<van-button icon="arrow-left" type="default" block style="border:0px;height: 50px;" @click="onClickReturn"></van-button>
+					</van-col>
+					<van-col span="23">
+						<van-search v-model.trim="searchText" :placeholder=fkTextDefault.Common.GoodsBarcodeScanning @keyup.enter="onScan"
+						 autofocus="true" />
+					</van-col>
+				</van-row>
+				
+				<div style="box-shadow: 0px 3px 10px #888888;margin-bottom: 15px;">
+					<div>
+						<van-field v-model="pageData.tranid" label-width="100px" :label=fkTextDefault.Common.PONO colon="true" readonly></van-field>
+					</div>
+
+					<div>
+						<van-field v-model="pageData.trandate" label-width="100px" :label=fkTextDefault.Common.Date colon="true" readonly></van-field>
+					</div>
+				</div>
+				
+				
+				<div style="box-shadow: 0px 3px 10px #888888;margin-bottom: 15px;">
+					<div class="poDatils-div" v-for="(v,i) in pageData.items" :key="v.itemid" style="background: #888;padding: 0px;margin: 0px;">
+						<van-cell  @click="onViewItemDetail(v)" center :title="v.item"  border="false" :style="{background:v.bgcolor,'border-bottom':'solid 1px #aaa'}">
+							<template #label>
+								<van-row>
+								  <van-col span="24" class="hp_font_small">{{fkTextDefault.Common.Unit}}:{{v.unit}}</van-col>
+								</van-row>
+							</template>
+							<template #right-icon>
+								<div style="text-align:right;">
+									{{fkTextDefault.Common.Quantity}}: {{v.quantity}}
+									<br>
+									{{fkTextDefault.Common.Remaining}}:{{v.qtyRemain}}
+									<br>
+									<van-tag size="large" v-if="v.inputCount > 0" type="success">{{fkTextDefault.Common.InputQuantity}}：{{v.inputCount}}</van-tag>
+									<br>
+									<van-tag v-if="v.sumCountQty > 0" type="danger">{{fkTextDefault.Common.Input}}：{{v.sumCountQty}}{{fkTextDefault.Common.DataCount}}</van-tag>
+								</div>
+							</template>
+						</van-cell>
+					</div>
+				</div>
+				
+				<div class="btn-div" style="box-shadow: 0px -3px 10px #888888;">
+					<van-button style="float: left; width: 50%;" square block type="info" @click="onSaveCache()"
+						:text=fkTextDefault.Common.save ></van-button>
+				
+					<van-button style="float: right; width: 50%;" square block type="primary" @click="onSubmit()"
+						:text=fkTextDefault.Common.submit ></van-button>
+				</div>
+			</van-form>
+			<!-- 加载中 -->
+			<van-overlay style="background-color: #fff !important;" :show="isShowOverlay" @click="show = false">
+				<div class="wrapper" @click.stop>
+					<van-loading type="spinner" size="50px" color="#1989fa" vertical>
+						<van-button size="large" disabled="true" style="border: none;font-size: 15px;" :text="loadingText">
+						</van-button>
+					</van-loading>
+				</div>
+			</van-overlay>
+			<a style="display: none;">{{pageFlag}}</a>
+		</div>
+	</body>
+	<script>
+		document.title = fkTextDefault.Common.M01_Name;
+		var app = new Vue({
+			el: '#app',
+			data() {
+				return {
+					pageData: {
+						internalid: '',
+						tranid: '',
+						trandate: '',
+						items: [],
+					},
+					cacheData:{
+						//seq: 0,
+						key: "",
+						owner: fkcommom.cookie.getCookie("username"),
+						deleted: false,
+						data: "",
+						type: 1,
+						jsonData:[],
+					},
+					isShowOverlay: true,
+					isShowOverlay1: true,
+					isShowOverlay2: true,
+					loadingText: fkTextDefault.Common.Loading,
+					searchText:"",
+					returnURL:"../Controls/Scan.html?model=01",
+					locationID:fkcommom.localStorage.get('locationId'),
+					pageFlag: 0,
+				}
+			},
+			created() {
+				fkcommom.iframe.receive("item", this.onAfterScan);
+				fkcommom.iframe.receive("viewitems", this.onAfterViewItemDetail);
+				
+				this.getAdviceData(); //根据参数获取入库通知单的数据
+				this.getCacheData();
+			},
+			methods: {
+				//格式化主数据
+				formartPageData(){
+					let _this=this;
+					_this.pageData.items.forEach(function(item){
+						item["inputCount"]=0;
+						item["sumCountQty"]=0;
+						//修改手动录入值
+						if(_this.cacheData["jsonData"]){
+							for(var i=0;i<_this.cacheData.jsonData.length;i++){
+								if(_this.cacheData.jsonData[i].itemid == item.itemid && _this.cacheData.jsonData[i].lineno == item.lineno){
+									item["sumCountQty"]+=1;
+									item["inputCount"]+=eval(_this.cacheData.jsonData[i].quantity);
+								}
+							}
+						}
+						item["bgcolor"] = (item.qtyRemain - item.inputCount) == 0 ? "#DBFBD2" : ((item.qtyRemain - item.inputCount) == item.quantity) ? "#FDCFCF" : "#FFFEBB";
+					});
+					_this.pageFlag ++;
+				},
+				
+				//通过单号获取数据
+				getAdviceData(){
+					let _this = this;
+					var adviceNo = fkcommom.url.getQueryValue('adviceNo');
+					if (adviceNo) {
+						fkcommom.axios({
+								data: {
+									search_id: "customsearch_hc_wms_po_itemline",
+									extra_filter: [[
+										["tranid", "ANYOF", adviceNo],
+										"AND", 
+										["location", "ANYOF", _this.locationID],
+									]],
+								}
+							})
+							.then(resp => {
+								const rows = resp.data;
+								console.log('body', rows);
+								if (rows.Data.length == 0) {
+									rows.Code = 900;
+								}
+								if (rows.Code == 300) {
+									_this.isShowOverlay1 = false;
+									_this.isShowOverlay = _this.isShowOverlay1 || _this.isShowOverlay2;
+									var responseData = rows.Data[0];
+									_this.pageData.tranid=responseData.tranid;
+									_this.pageData.trandate=responseData.trandate;
+									_this.pageData.internalid=rows.Data[0].internalid;
+									_this.pageData.items=rows.Data;
+									_this.formartPageData();
+								} else if (rows.Code == 900) {
+									vant.Dialog.alert({
+										title: fkTextDefault.Common.TipTitle,
+										message: fkTextDefault.Common.NoTrackingNumberIsFoundOrInoperable,
+									}).then(() => {
+										window.location.href = this.returnURL;
+									});
+								}
+							}).catch(err => {
+								console.log('失败log', err);
+							});
+					}
+				},
+				
+				//获取缓存数据
+				getCacheData() {
+					var _this = this;
+					var seqCache = fkcommom.url.getQueryValue('seq');
+					if (seqCache) {
+						fkcommom.axios({
+								data: {
+									search_id: "customsearch_hc_wms_cache_data",
+									extra_filter: [
+										["internalid", "ANYOF", seqCache]
+									],
+								},
+							})
+							.then(resp => {
+								const rows = resp.data;
+								console.log('cache data', rows);
+								if (rows.Code == 300) {
+									this.isShowOverlay2 = false;
+									this.isShowOverlay = this.isShowOverlay1 || this.isShowOverlay2;
+									this.cacheData = rows.Data[0];
+									var scanData=[];
+									try{
+									 scanData=JSON.parse(this.cacheData.data);
+									 if(!Array.isArray(scanData)) scanData=[];
+									}catch(ex){
+										scanData=[];
+									}
+									this.cacheData["jsonData"]=scanData;
+									console.log('this.cacheData.jsonData', this.cacheData.jsonData);
+									this.formartPageData();
+								}
+							}).catch(err => {
+								console.log('失败log', err);
+							});
+					} else {
+						this.isShowOverlay2 = false;
+						this.isShowOverlay = this.isShowOverlay1 || this.isShowOverlay2;
+					}
+				},
+				
+				//提交事件
+				onSubmit() {
+					let _this=this;
+					if(_this.cacheData.jsonData==""){
+						this.$toast.fail(fkTextDefault.Common.PleaseEnterTheQuantity);
+						return;
+					}
+					this.$toast.loading({
+					  duration: 0, // 持续展示 toast
+					  forbidClick: true,
+					  message:fkTextDefault.Common.Processing
+					});
+					let data={
+						"internalid": _this.pageData.internalid,
+						"cacheId": _this.cacheData.internalid,
+						"formData": []
+					}
+					for(var i=0;i<_this.pageData.items.length;i++){
+						var item=_this.pageData.items[i];
+						var _item={};
+						
+						_item["itemid"]=item.itemid;
+						
+						_item["islotno"]=item.islotno;//=="YES"?true:false;
+						_item["lineno"]=item.lineno;
+						_item["usebin"]=item.usebin;//=="YES"?true:false;
+						_item["location"]=fkcommom.localStorage.get('locationId'),
+						_item["itemData"]=[];
+						let totalQty=0;
+						for(var j=0;j<_this.cacheData.jsonData.length;j++){
+							var cache=_this.cacheData.jsonData[j];
+							var _cache={};
+							if(item.itemid==cache.itemid && item.lineno==cache.lineno){
+								_cache["batch"]=cache.batch;
+								_cache["quantity"]=cache.quantity;
+								totalQty+=eval(cache.quantity);
+								_cache["bin"]=cache.binId;
+								
+								_item.itemData.push(_cache);
+							}
+						}
+						_item["totalQty"]=totalQty;
+						if(_item.itemData.length>0){
+							data.formData.push(_item);
+						}
+					}
+					console.log("data",data)
+					fkcommom.axios({
+						url: fkconfig.NSSL._01_Submit,
+						data: data,
+					}).then(resp => {
+						this.$toast.clear();
+						const rows = resp.data;
+						console.log('nice', rows)
+						if ([300, 0].includes(rows.Code)) {
+							//跳转到操作页面
+							this.$toast.setDefaultOptions({
+								onClose:function(){
+									location.href =_this.returnURL;
+								}
+							});
+							this.$toast.success(fkTextDefault.Common.OperateSuccessfully);
+						}
+						if (rows.Code == 900) {
+							_this.isShowOverlay = false; //提交失败返回
+							vant.Dialog.alert({
+								title: fkTextDefault.Common.TipTitle,
+								message: rows.Msg.message,
+							});
+						}
+					}).catch(err => {
+						this.$toast.clear();
+						console.log('失败log', err);
+					});
+				},
+				
+				//保存事件
+				onSaveCache() {
+					const _this = this;
+					if(_this.cacheData.jsonData==""){
+						this.$toast.fail(fkTextDefault.Common.PleaseEnterTheQuantity);
+						return;
+					}
+					
+					_this.isShowOverlay = true; //提交后显示加载，防止重复点击提交
+					_this.loadingText = fkTextDefault.Common.LodadingDeal;
+					
+					_this.cacheData.key=fkcommom.url.getQueryValue('adviceNo');
+					_this.cacheData.crtUser=fkcommom.cookie.getCookie("username");
+					_this.cacheData.seq=_this.cacheData.internalid;
+					
+					this.cacheData.data=JSON.stringify(_this.cacheData.jsonData);
+					console.log("cacheData",_this.cacheData);
+					fkcommon.axios({
+							url: fkconfig.NSSL.SaveCache,
+							data: _this.cacheData,
+					},_this)
+					.then(resp => {
+						const rows = resp.data;
+						console.log('nice', rows)
+						if (rows.Code == 300) {
+							this.isShowOverlay = false;
+							this.$toast.setDefaultOptions({
+								onClose:function(){
+									location.href="../Controls/CacheList.html?model=01";
+								}
+							});
+							this.$toast.success(fkTextDefault.Common.saveSuccess);
+						}
+						if (rows.Code == 900) {
+							_this.isShowOverlay = false; //提交失败返回
+							vant.Dialog.alert({
+								title: fkTextDefault.Common.TipTitle,
+								message: fkTextDefault.Common.FailedToCreateCache,
+							});
+						}
+					}).catch(err => {
+						console.log('失败log', err);
+					});
+					
+				},
+				
+				//返回扫描首页操作
+				onClickReturn() {
+					if(this.cacheData.jsonData.length != 0){
+						vant.Dialog.confirm({
+							title: fkTextDefault.Common.TipTitle,
+							message: fkTextDefault.Common.WhetherToSaveInputData,
+						}).then(()=>{
+							this.onSaveCache();
+						}).catch(()=>{
+							window.location.href = this.returnURL;
+						});
+					}else{
+						window.location.href = this.returnURL;
+					}
+					
+				},
+				
+				//某个货品remain数量(如果有多行货品，需要将此货品的所有行的remain数量汇总)
+				getRemainQty(item){
+					var qtyRemain = 0;
+					for(let i = 0;i < this.pageData.items.length;i++) {
+						if(item == this.pageData.items[i].item) {
+							qtyRemain += (parseInt(this.pageData.items[i].qtyRemain) - parseInt(this.pageData.items[i].inputCount));
+						}
+					}
+					return qtyRemain;
+				},
+				
+				//扫码事件
+				onScan() {
+					let url="./ScanItem.html";
+					this.searchText=this.searchText.trim();
+					if(this.searchText!=""){
+						var isExist = false;
+						for(var i = 0;i < this.pageData.items.length;i++){
+							console.log("this.searchText||this.pageData.items[i].item",this.searchText+"||"+this.pageData.items[i].item)
+							console.log("this.searchText==this.pageData.items[i].item",this.searchText==this.pageData.items[i].item)
+							console.log("1",typeof(this.searchText));
+							console.log("2",typeof(this.pageData.items[i].item));
+							if(this.searchText == this.pageData.items[i].item){
+								isExist = true;
+								console.log("isExist",isExist);
+								var qtyRemain = this.getRemainQty(this.searchText);
+								if(qtyRemain == 0){
+									this.$toast.fail(fkTextDefault.Common.GoodsEntered);
+								}else{
+									var setData = {
+										itemData : {
+											item: this.pageData.items[i].item,
+											itemid: this.pageData.items[i].itemid,
+											itemdescription: this.pageData.items[i].itemdescription,
+											usebin: this.pageData.items[i].usebin,
+											islotno: this.pageData.items[i].islotno,
+											quantity: 1,
+											unit: this.pageData.items[i].unit,
+											batch: "",
+											bin: "",
+											locationId: this.locationID,
+										},
+										qtyRemain: qtyRemain,
+									}
+									fkcommom.iframe.show("item", url, setData);
+								}
+								break;
+							}
+						}
+						if(!isExist){
+							this.$toast.fail(fkTextDefault.Common.IncorrectScanningOfGoods);
+							this.searchText = "";
+						}
+					}else{
+						this.$toast.fail(fkTextDefault.Common.PleaseScanTheBarcode);
+					}
+				},
+				
+				//扫码之后事件
+				onAfterScan(data,isCancel){
+					document.querySelector("input[type=search]").focus();
+					this.searchText = '';
+					if(isCancel){
+						console.log('data', JSON.stringify(data));
+						for(var i = 0;i < this.pageData.items.length;i++){
+							if(data.quantity > 0){
+								if(data.itemid == this.pageData.items[i].itemid){
+									var remainQty = this.pageData.items[i].qtyRemain - this.pageData.items[i].inputCount;
+									if(remainQty == 0){
+										continue;
+									}
+									if(remainQty >= data.quantity){
+										data.lineno = this.pageData.items[i].lineno;
+										this.cacheData.jsonData.push(data);
+										break;
+									}else{
+										var addData = fkcommom.clone(data);
+										addData.quantity = remainQty;
+										addData.lineno = this.pageData.items[i].lineno;
+										this.cacheData.jsonData.push(addData);
+										data.quantity = data.quantity - remainQty;
+									}
+								}
+							}
+						}
+						this.cacheData.data = JSON.stringify(this.cacheData.jsonData);
+						this.formartPageData();
+					}
+				},
+				
+				//查看货品录入详情事件
+				onViewItemDetail(item){
+					let cachelist=[];
+					for(var i = this.cacheData.jsonData.length-1;i >= 0;i--){
+						if(this.cacheData.jsonData[i].itemid == item.itemid && this.cacheData.jsonData[i].lineno==item.lineno){
+							cachelist.push(this.cacheData.jsonData[i]);
+							this.cacheData.jsonData.splice(i,1);
+						}
+					}
+					let setData={
+						cachelist:cachelist,
+						itemjson: item
+					};
+					fkcommom.iframe.show("viewitems", "../Controls/ItemDetail.html?model=01", setData);
+				},
+				
+				//查看货品录入详情之后事件
+				onAfterViewItemDetail(data){
+					document.querySelector("input[type=search]").focus();
+					if(data && data.length>0){
+						for(var i = 0;i < data.length;i++){
+							this.cacheData.jsonData.push(data[i]);
+						}
+					}
+					this.formartPageData();
+				},
+			},
+		});
+		
+	</script>
+</html>

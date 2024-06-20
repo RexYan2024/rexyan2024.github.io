@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+	
+		<link rel="stylesheet" href="../Resources/css/vant.css" />
+		<!-- vue.min.js -->
+		<script src="../Resources/js/vue.min.js"></script>
+		<script src="../Resources/js/language/fklanguage.js"></script>
+		<script src="../Resources/js/config.js"></script>
+		<script src="../Resources/js/commom.js"></script>
+		<!-- vant.min.js -->
+		<script src="../Resources/js/vant.min.js"></script>
+		<style>
+			body{
+				background-color: #F9FAFC;
+			}
+			.div-title {
+				margin-top: 30px;
+			}
+		</style>
+	</head>
+	<body>
+		
+		<div id="app">
+			<van-nav-bar :left-text=fkTextDefault.Common.Back left-arrow @click-left="onClickLeft"></van-nav-bar>
+			
+			<div class="div-title">
+				<van-row @click=onSkipIT>
+					<van-col span="1"></van-col>
+					<van-col span="22" style="background: #68BF7B;height: 100px;color:#fff;">
+						<van-row>
+							<van-col span="4" style="padding-top:25px;">
+								<img src="../Resources/image/IT.png" style="width:50px;margin-left: 10px;">
+							</van-col>
+							<van-col span="17" style="padding:25px;padding-top: 40px;">
+								<b>{{fkTextDefault.Common.InventoryTransfer}}</b>
+							</van-col>
+							<van-col span="3" style="padding-top:35px;">
+								<van-icon name="arrow" color="#fff" size="30" />
+							</van-col>
+						</van-row>
+				
+					</van-col>
+					<van-col span="1"></van-col>
+				</van-row>
+				
+				
+				<van-row @click=onSkipTO style="margin-top: 50px;">
+					<van-col span="1"></van-col>
+					<van-col span="22" style="background: #008bfa;height: 100px;color:#fff;">
+						<van-row>
+							<van-col span="4" style="padding-top:25px;">
+								<img src="../Resources/image/TO.png" style="width:50px;margin-left: 10px;">
+							</van-col>
+							<van-col span="17" style="padding:25px;padding-top: 40px;">
+								<b>{{fkTextDefault.Common.TransferOrder}} </b>
+							</van-col>
+							<van-col span="3" style="padding-top:35px;">
+								<van-icon name="arrow" color="#fff" size="30" />
+							</van-col>
+						</van-row>
+				
+					</van-col>
+					<van-col span="1"></van-col>
+				</van-row>
+			</div>
+		</div>
+	</body>
+	<script>
+		document.title = fkTextDefault.Common.M06_Name;
+		var app = new Vue({
+			el: '#app',
+			data() {
+			    return {
+					indexUrl: '../Index/index.html',
+					toUrl: '../Controls/Scan.html?model=06_TO',
+					itUrl: '../Controls/Scan.html?model=06_IT',
+			    };
+			},
+			methods:{
+				onClickLeft(){
+					window.location.href = this.indexUrl;
+				},
+				onSkipIT(){
+					window.location.href = this.itUrl;
+				},
+				onSkipTO(){
+					window.location.href = this.toUrl;
+				}
+			},
+		});
+		
+	</script>
+</html>
+
